@@ -1,6 +1,5 @@
 defmodule TyperiGenTest do
   use ExUnit.Case
-  doctest Typeri
   doctest Casing, import: true
 
   test "generates types" do

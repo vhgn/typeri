@@ -16,6 +16,7 @@
           {
             buildInputs = with pkgs; [
               elixir
+			  elixir-ls
 			  erlang
             ];
           };
