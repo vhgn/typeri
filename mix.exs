@@ -5,7 +5,7 @@ defmodule Typeri.MixProject do
     [
       app: :typeri,
       description: "TypeScript type generator for Peri schemas",
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.18",
       package: package(),
       start_permanent: Mix.env() == :prod,
