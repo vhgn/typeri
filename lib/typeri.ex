@@ -6,23 +6,45 @@ defmodule Typeri do
   @not_implemented "Not implemented"
 
   @doc """
-  Hello world.
+  Creates a type definition with name (provided atom or string will be transformed to PascalCase)
+
+  ## Examples
+
+      iex> Typeri.to_definition(:product, {:required, %{ price: {:required, :integer}, description: :string }})
+      "type Product = { description: null | string; price: number }"
+
+  """
+  @spec to_definition(name :: String.t() | atom(), schema :: Peri.schema()) :: String.t()
+  def to_definition(name, schema) do
+    [
+      "type #{transform_name(name)} =",
+      to_type(schema)
+    ]
+    |> Enum.join(" ")
+  end
+
+  defp transform_name(name) when is_binary(name) do
+    name
+    |> String.split("_")
+    |> Enum.map(&String.capitalize/1)
+  end
+
+  defp transform_name(name) when is_atom(name) do
+    transform_name(Atom.to_string(name))
+  end
+
+  @doc """
+  Creates a type from schema
 
   ## Examples
 
       iex> Typeri.to_type({:required, :boolean})
       "boolean"
 
-  """
-  @spec to_definition(name :: String.t(), schema :: Peri.schema()) :: String.t()
-  def to_definition(name, schema) do
-    [
-      "type #{name} =",
-      to_type(schema)
-    ]
-    |> Enum.join("\n")
-  end
+      iex> Typeri.to_type({:required, %{ name: {:required, :string}, age: :integer }})
+      "{ name: string; age: null | number }"
 
+  """
   @spec to_type(schema :: Peri.schema()) :: String.t()
   def to_type(schema) do
     to_type(schema, [])
@@ -72,9 +94,14 @@ defmodule Typeri do
   defp to_type({:custom, _, _}, opts), do: convert("unknown", opts)
 
   defp to_type(schema, opts) when is_map(schema) do
+    schema
+    |> Map.to_list()
+    |> to_type(opts)
+  end
+
+  defp to_type(schema, opts) when is_list(schema) do
     defs =
       schema
-      |> Map.to_list()
       |> Enum.map(fn {name, type} -> "#{name}: #{to_type(type, [])}" end)
       |> Enum.join("; ")
 
