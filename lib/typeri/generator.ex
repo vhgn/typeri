@@ -1,4 +1,6 @@
 defmodule Typeri.Generator do
+  require Logger
+
   @app :typeri
 
   defmacro __using__(opts) do
@@ -16,33 +18,69 @@ defmodule Typeri.Generator do
         unquote do
           opts
         end
-        |> Keyword.get(:file, name <> ".ts")
+        |> Keyword.get(:file, name)
       end
     end
   end
 
   def run(opts \\ []) do
-    output = get_config(:output, opts, :stdout)
+    output_type = get_config(:output, opts, :stdout)
+    file_structure = get_config(:file_structure, opts, :nested)
+    file_naming = get_config(:file_naming, opts, :kebab_case)
 
     get_config(:modules, opts, [])
     |> Enum.map(&module_to_file/1)
-    |> Enum.map(&output(&1, output))
+    |> Enum.map(
+      &output(&1,
+        output_type: output_type,
+        file_structure: file_structure,
+        file_naming: file_naming
+      )
+    )
   end
 
-  defp output({name, content}, :return) do
-    {name, content}
+  defp output({name, content},
+         output_type: :return,
+         file_structure: file_structure,
+         file_naming: file_naming
+       ) do
+    alias Casing
+
+    delimiter =
+      if file_structure == :flat do
+        ""
+      else
+        "/"
+      end
+
+    file =
+      name
+      |> String.split(".")
+      |> Enum.map(&Casing.transform(&1, :pascal_case, file_naming))
+      |> Enum.join(delimiter)
+
+    {file <> ".ts", content}
   end
 
-  defp output({name, content}, :stdout) do
-    IO.puts("// #{name}" <> content)
-    {name, content}
+  defp output(name, [{:output_type, :stdout} | opts]) do
+    {file, content} = output(name, [{:output_type, :return} | opts])
+    IO.puts("// #{file}\n" <> content)
+    {file, content}
   end
 
-  defp output({name, content}, dir) when is_binary(dir) do
-    Path.join(dir, name)
+  defp output(name, [{:output_type, dir} | opts]) when is_binary(dir) do
+    {file, content} = output(name, [{:output_type, :return} | opts])
+    path = Path.join(dir, file)
+    Logger.info("Writing to path #{path}")
+
+    Path.dirname(path)
+    |> tap(&Logger.info("Creating path #{&1}"))
+    |> File.mkdir_p!()
+
+    path
     |> File.write!(content)
 
-    {name, content}
+    {path, content}
   end
 
   defp get_config(key, overrides, default) do

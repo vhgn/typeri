@@ -1,10 +1,11 @@
 defmodule TyperiGenTest do
   use ExUnit.Case
   doctest Typeri
+  doctest Casing, import: true
 
   test "generates types" do
     expected =
-      {"TestSchema.ts",
+      {"test-schema.ts",
        [
          "export type Customer = { name: string };",
          "export type Product = { description: null | string; price: number };"
