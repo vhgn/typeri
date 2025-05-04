@@ -11,16 +11,12 @@ defmodule Typeri do
   ## Examples
 
       iex> Typeri.to_definition(:product, {:required, %{ price: {:required, :integer}, description: :string }})
-      "type Product = { description: null | string; price: number }"
+      "export type Product = { description: null | string; price: number };"
 
   """
   @spec to_definition(name :: String.t() | atom(), schema :: Peri.schema()) :: String.t()
   def to_definition(name, schema) do
-    [
-      "type #{transform_name(name)} =",
-      to_type(schema)
-    ]
-    |> Enum.join(" ")
+    "export type #{transform_name(name)} = " <> to_type(schema) <> ";"
   end
 
   defp transform_name(name) when is_binary(name) do
